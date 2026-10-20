@@ -81,6 +81,11 @@ for t, tag, name in TARGETS:
         macros += [rf'\newcommand{{\hw{tag}Lat}}{{{lat["mean"]:.1f}}}', rf'\newcommand{{\hw{tag}LatSD}}{{{lat["sd"]:.1f}}}',
                    rf'\newcommand{{\hw{tag}RT}}{{{30000 / lat["mean"]:.0f}}}',
                    rf'\newcommand{{\hw{tag}Win}}{{{s["window_ms"]["mean"] / 1000:.2f}}}',
+                   rf'\newcommand{{\hw{tag}WinRT}}{{{30000 / s["window_ms"]["mean"]:.0f}}}',   # epoch / 11-step decision
+                   # hardware figure caption: remaining FP32 time of a step, free heap after start-up, allocator overhead
+                   rf'\newcommand{{\hw{tag}Other}}{{{lat["mean"] - s["create_ms_mean"] - s["conv_ms_mean"] - s["fp32_gn_ms_mean"]:.1f}}}',
+                   rf'\newcommand{{\hw{tag}BootFree}}{{{s["heap"]["boot_free"]:,}}}',
+                   rf'\newcommand{{\hw{tag}Overhead}}{{{s["heap"]["boot_free"] - s["heap"]["after_static_alloc_free"] - s["heap"]["static_buffer_bytes"]:,}}}',
                    rf'\newcommand{{\hw{tag}Conv}}{{{s["conv_ms_mean"]:.1f}}}', rf'\newcommand{{\hw{tag}GN}}{{{s["fp32_gn_ms_mean"]:.1f}}}',
                    rf'\newcommand{{\hw{tag}Create}}{{{s["create_ms_mean"]:.1f}}}',
                    rf'\newcommand{{\hw{tag}Flash}}{{{s["flash_linked_model_bytes"]:,}}}',
@@ -106,6 +111,12 @@ for t, tag, name in TARGETS:
                     'AgreeFP', 'DlogitSim', 'StressN', 'DriftFirst', 'DriftLast')]
     cols[t] = c
 
+# text claim (Methods, Temporal Block): on the 100 and 500 test windows, the 11-step causal formulation reproduces the
+# center-epoch logits of the full 21-epoch formulation exactly (PyTorch FP32, deployed fold-0 model)
+for ref in ('pc_reference.json', 'pc_reference_500.json'):
+    pr = json.load(open(os.path.join(HERE, 'inputs', ref)))
+    assert pr['max_abs_diff_21_vs_11'] == 0.0 and pr['n'] in (100, 500), ref
+
 # text claim: on every measured chip, chip-FP32 label differences are exactly the simulation-FP32 differences
 for t, _, _ in TARGETS:
     for w in ('100', '500'):
@@ -120,11 +131,11 @@ ROWS = [('A', 'Platform and build'),
         ('idf', 'ESP-IDF / ESP-DL / ESP-PPQ'),
         ('B', 'Memory'),
         ('flash', 'Model data in Flash (B)'), ('flash_split', '\\quad INT8 blocks / FP32 parameters (B)'),
-        ('static', 'Static buffers in internal RAM (B)'), ('peakdyn', 'Peak dynamic heap during inference (B)'),
-        ('minfree', 'Minimum free internal heap (B)'), ('largest', 'Largest free block after inference (B)'),
+        # static buffers, peak dynamic heap, minimum free heap and the latency breakdown are shown in the hardware
+        # figure (figures/src/make_hw_figure.py, same logs), so they are not repeated in the table
+        ('largest', 'Largest free block after inference (B)'),
         ('C', 'Latency (esp\\_timer, one step = one 30-s epoch)'),
         ('lat', 'Step latency, mean $\\pm$ SD (ms)'), ('lat_range', '\\quad range (ms)'),
-        ('parts', '\\quad instantiation / INT8 convolution / FP32 GroupNorm, GELU, requantization (ms)'),
         ('win', '11-step window (s)'), ('rt', 'Epoch duration / step latency'),
         ('D', 'Agreement'),
         ('agree_sim', 'Labels equal to PC simulation, 100 windows'), ('dlogit_sim', '\\quad max $|\\Delta\\mathrm{logit}|$ vs.\\ simulation, median / max'),

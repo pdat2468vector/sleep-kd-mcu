@@ -61,8 +61,10 @@ tun = pd.read_csv(os.path.join(R, 'teacher_ce_tuning.csv')).sort_values('best_va
 sel = json.load(open(os.path.join(EXP, 'runs', 'seed42', 'T_ce', 'fold0', 'result.json')))['selected_from']
 rows = [f"{r.lr:g} & {r.ls:g} & {100 * r.best_val_mf1:.2f} & {r.best_epoch} & {r.epochs_run} & {'selected' if r.arm == sel else ''} \\\\"
         for r in tun.itertuples()]
-table('Teacher-CE configuration search (fold 0 only, one seed). Selection by validation Macro-F1 of fold 0 (the subjects '
-      'of fold 1); test data were not used. Maximum 80 epochs, early stopping after 20 epochs without improvement.',
+table('Teacher-CE configuration search (fold 0 only, one seed). Selection by validation Macro-F1 of fold 0, whose '
+      'validation subjects are the 21 test subjects of fold 1; contrasts involving Teacher-CE or a model distilled from it '
+      'are therefore computed without these subjects (main text, Methods, Statistical Analysis). Maximum 80 epochs, early '
+      'stopping after 20 epochs without improvement.',
       'tab:s_tuning', 'cccccc', r'\textbf{Learning rate} & \textbf{Label smoothing} & \textbf{Validation Macro-F1 (\%)} & '
       r'\textbf{Best epoch} & \textbf{Epochs run} &', rows)
 
@@ -129,7 +131,8 @@ def contrast_table(df, caption, label, groups=None):
 
 
 contrast_table(pd.read_csv(HYB), 'Pre-specified contrasts, primary analysis (contrasts involving Teacher-CE or a model '
-               'distilled from it use 79 subjects, the others 100): all metrics. $\\Delta$ in percentage points '
+               'distilled from it use 79 subjects, the others 100; the restriction to 79 subjects was decided after the '
+               'overlap between tuning and test subjects had been identified, main text, Methods): all metrics. $\\Delta$ in percentage points '
                '($\\kappa$: $\\times 100$) with subject-cluster bootstrap 95\\% CI; $q$: Benjamini--Hochberg within the '
                'primary (Macro-F1) and the secondary (accuracy, $\\kappa$, N1-F1) family.', 'tab:s_contrasts_primary')
 contrast_table(pd.read_csv(os.path.join(R, 'primary_cluster_bootstrap.csv')), 'Sensitivity analysis: the same contrasts '
@@ -178,7 +181,11 @@ contrast_table(sc, 'Training-seed robustness: contrasts between the Edge Student
                'pooled analysis the predictions of the three seeds are pooled within each subject and subjects are '
                'resampled (10,000 subject-cluster bootstrap replicates). $\\Delta$ in percentage points ($\\kappa$: '
                '$\\times 100$) with 95\\% CI; $q$: Benjamini--Hochberg over the three contrasts within the primary '
-               '(Macro-F1) and the secondary (accuracy, $\\kappa$, N1-F1) family, separately for each block.',
+               '(Macro-F1) and the secondary (accuracy, $\\kappa$, N1-F1) family, separately for each block. In the '
+               'seed-42 block, Edge-Staged (Assistant-KD, Teacher-CE) $-$ Edge-Direct (Teacher-CE) repeats a contrast '
+               'of Table~\\ref{tab:s_contrasts_primary} with separately drawn bootstrap replicates and a family of '
+               'three contrasts instead of nine, so its confidence intervals and $q$-values differ slightly from '
+               'those of Table~\\ref{tab:s_contrasts_primary}.',
                'tab:s_seed_contrasts', groups=grp)
 
 # ---------------------------------------------------------------- quantization on the full test set (R2_quant_eval)
@@ -206,7 +213,7 @@ for sset in qc.subjects.unique():
     for r in qc[qc.subjects == sset].itertuples():
         rows.append(f'\\quad {QM[r.metric]} & {sgn(r.diff_pp)} [{sgn(r.ci95_low_pp)}, {sgn(r.ci95_high_pp)}] & {q(r.p_boot)} & '
                     f'{q(r.q_bh) if r.family == "secondary" else "--"} \\\\')
-table('Effect of quantization (INT8 configuration $-$ FP32, percentage points) with paired subject-cluster bootstrap 95\\% '
+table('Effect of quantization (INT8 configuration $-$ strict FP32 reference, percentage points) with paired subject-cluster bootstrap 95\\% '
       'CI (10,000 replicates). Macro-F1 is the pre-specified primary outcome; $q$: Benjamini--Hochberg over the seven '
       'secondary metrics. The ESP32 and ESP32-S3 configurations gave identical predictions, so one set of results is shown.',
       'tab:s_quant_contrasts', 'lccc', r'\textbf{Metric} & \textbf{$\Delta$ [95\% CI]} & \textbf{$p$} & \textbf{$q$}', rows)
@@ -301,8 +308,9 @@ doc = '\n'.join([r'\documentclass[11pt]{article}', r'\usepackage[margin=2cm]{geo
                  r'\title{Supplementary Information\\[2pt]\large Ultra-Lightweight Sleep Stage Classification on a Microcontroller: Hardware-Validated Compression and a '
                  r'Controlled Evaluation of Teacher-Assistant Distillation}',
                  r'\date{}', r'\begin{document}', r'\maketitle',
-                 r'All values are generated from the exported cross-validation runs (five-fold subject-level cross-validation on '
-                 f'Sleep-EDF Expanded, {man.subject.nunique()} subjects, {int(n_test.sum()):,} scored epochs). '
+                 r'All values are generated by scripts from the exported results: the cross-validation runs on Sleep-EDF Expanded '
+                 f'(five-fold subject-level cross-validation, {man.subject.nunique()} subjects, {int(n_test.sum()):,} scored epochs) '
+                 r'and on HMC, the quantization evaluation, the representation-similarity analysis and the attribution analysis on DREAMS. '
                  r'Supplementary Data 1 and 2 list the fold of every '
                  r'subject and recording.', '', *T, r'\end{document}'])
 open(os.path.join(OUT, 'Supplementary_Information.tex'), 'w', encoding='utf-8').write(doc)

@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this code, please cite the paper and this software."
 title: "Ultra-lightweight sleep stage classification on a microcontroller: code"
-version: "1.0.0"
+version: "1.0.1"
 license: MIT
 authors:
   - family-names: Pham
@@ -14,7 +14,7 @@ authors:
     given-names: Thomas
   - family-names: Lin
     given-names: Chin-Teng
-doi: 10.5281/zenodo.23487429
+doi: 10.5281/zenodo.23487428
 repository-code: "https://github.com/pdat2468vector/sleep-kd-mcu"
 preferred-citation:
   type: article

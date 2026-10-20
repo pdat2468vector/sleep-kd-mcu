@@ -16,8 +16,8 @@ C = dict(K_FOLDS=5, RUNS_DIR=os.path.join(EXP, 'runs'), SEEDS=[42])
 MAIN = [('Teacher', 'T_ce'), ('Linear Assistant', 'A_kd_Tce'), ('Edge Student', 'E_staged_Tce')]
 
 
-def arm_stats(arm, n_boot=10000, seed=0):
-    cms, _ = skd.subject_cms(C, arm)
+def arm_stats(arm, n_boot=10000, seed=0, exclude=None):
+    cms, _ = skd.subject_cms(C, arm, exclude_subjects=exclude)
     subs = sorted(cms)
     CM = np.stack([cms[s] for s in subs])
     tot = CM.sum(0)
@@ -47,9 +47,25 @@ def ci(s):
 
 
 blocks = {}
-rows = [f"{lab} & {ci(S[a])} & {f2(S[a]['acc'])} & {S[a]['kappa']:.3f} & {f2(S[a]['f1'][1])} \\\\" for lab, a in MAIN]
-blocks['overall_perf'] = '\n'.join([r'\begin{tabular}{lcccc}', r'\toprule',
-    r"\textbf{Model} & \textbf{Macro-F1 (\%) [95\% CI]} & \textbf{Accuracy (\%)} & \textbf{Cohen's $\kappa$} & \textbf{N1-F1 (\%)} \\",
+# Macro-F1 without the 21 subjects used to select the Teacher-CE configuration (same file as Supplementary table S5);
+# all three main models belong to the Teacher-CE lineage
+P79 = pd.read_csv(os.path.join(EXP, 'results', 'sensitivity_exclF1_pooled.csv')).set_index('arm')
+assert set(P79.n_subjects) == {79}
+# the same subject-cluster bootstrap CI on the 79 subjects (fold-1 test subjects excluded); point value == Colab file
+MAN = pd.read_csv(os.path.join(EXP, 'results', 'fold_manifest_subject_level.csv'))
+F1_SUBJ = sorted(MAN[MAN.fold == 1].subject.unique())
+assert len(F1_SUBJ) == 21
+S79 = {a: arm_stats(a, exclude=F1_SUBJ) for _, a in MAIN}
+for a, s79 in S79.items():
+    assert s79['n_sub'] == 79 and abs(s79['mf1'] - P79.loc[a, 'mf1']) < 1e-9, a
+# from the two-decimal values printed in Table 2, so that the text matches what the reader can compute from the table
+SEL_MAXDIFF = max(abs(round(P79.loc[a, 'mf1'], 2) - round(S[a]['mf1'], 2)) for _, a in MAIN)
+assert SEL_MAXDIFF < 0.15                                    # Results: "differed ... by at most" (small)
+rows = [f"{lab} & {ci(S[a])} & {ci(S79[a])} & {f2(S[a]['acc'])} & {S[a]['kappa']:.3f} & {f2(S[a]['f1'][1])} \\\\"
+        for lab, a in MAIN]
+blocks['overall_perf'] = '\n'.join([r'\begin{tabular}{lccccc}', r'\toprule',
+    r"\textbf{Model} & \textbf{Macro-F1 (\%) [95\% CI]} & \textbf{Macro-F1, $n = 79$ (\%) [95\% CI]} & \textbf{Accuracy (\%)} & "
+    r"\textbf{Cohen's $\kappa$} & \textbf{N1-F1 (\%)} \\",
     r'\midrule', *rows, r'\bottomrule', r'\end{tabular}'])
 
 rows = []
@@ -80,14 +96,32 @@ def q(v):
     return '$<$0.001' if v < 0.001 else f'{v:.3f}'
 
 
+# Table of the nine pre-specified contrasts, grouped by question; compact names (defined in the table caption)
+CNAME = {'E_staged_Tfocal': 'Staged (T-Focal)', 'E_direct_Tfocal': 'Direct (T-Focal)', 'E_staged_Tce': 'Staged (T-CE)',
+         'E_direct_Tce': 'Direct (T-CE)', 'E_from_Ascratch': 'KD (A-Scratch)', 'E_scratch': 'Scratch',
+         'T_ce': 'Teacher-CE', 'T_focal': 'Teacher-Focal', 'A_kd_Tfocal': 'Assistant-KD (T-Focal)',
+         'A_scratch': 'Assistant-Scratch'}
+CGROUPS = [('Edge Student: staged vs.\\ direct distillation',
+            ['E_staged_Tfocal - E_direct_Tfocal', 'E_staged_Tce - E_direct_Tce']),
+           ('Edge Student: distillation vs.\\ training from labels',
+            ['E_staged_Tfocal - E_scratch', 'E_direct_Tfocal - E_scratch', 'E_from_Ascratch - E_scratch']),
+           ('Edge Student: Teacher-to-Assistant step', ['E_staged_Tfocal - E_from_Ascratch']),
+           ('Teacher quality', ['E_direct_Tce - E_direct_Tfocal', 'T_ce - T_focal']),
+           ('Linear Assistant', ['A_kd_Tfocal - A_scratch'])]
+assert sorted(c for _, cs in CGROUPS for c in cs) == sorted(H.contrast.unique())     # all nine, each once
 rows = []
-for c in H.contrast.unique():
-    p = H[(H.contrast == c) & (H.metric == 'mf1')].iloc[0]
-    n1 = H[(H.contrast == c) & (H.metric == 'n1')].iloc[0]
-    rows.append(f"{lab(c)} & {int(p.n_subjects)} & ${p.diff_pp:+.2f}$ [${p.ci95_low_pp:+.2f}$, ${p.ci95_high_pp:+.2f}$] & "
-                f"{q(p.q_bh)} & ${n1.diff_pp:+.2f}$ [${n1.ci95_low_pp:+.2f}$, ${n1.ci95_high_pp:+.2f}$] & {q(n1.q_bh)} \\\\")
-blocks['contrasts'] = '\n'.join([r'\begin{tabular}{lccccc}', r'\toprule',
-    r'\textbf{Contrast (A $-$ B)} & \textbf{$n$} & \textbf{$\Delta$Macro-F1 (pp) [95\% CI]} & \textbf{$q$} & \textbf{$\Delta$N1-F1 (pp) [95\% CI]} & \textbf{$q$} \\',
+for g, cs in CGROUPS:
+    rows.append(rf'\multicolumn{{7}}{{l}}{{\textit{{{g}}}}} \\')
+    for c in cs:
+        a, b = [x.strip() for x in c.split(' - ')]
+        p = H[(H.contrast == c) & (H.metric == 'mf1')].iloc[0]
+        n1 = H[(H.contrast == c) & (H.metric == 'n1')].iloc[0]
+        rows.append(f"\\quad {CNAME[a]} & {CNAME[b]} & {int(p.n_subjects)} & "
+                    f"${p.diff_pp:+.2f}$ [${p.ci95_low_pp:+.2f}$, ${p.ci95_high_pp:+.2f}$] & {q(p.q_bh)} & "
+                    f"${n1.diff_pp:+.2f}$ [${n1.ci95_low_pp:+.2f}$, ${n1.ci95_high_pp:+.2f}$] & {q(n1.q_bh)} \\\\")
+blocks['contrasts'] = '\n'.join([r'\begin{tabular}{llccccc}', r'\toprule',
+    r'\textbf{A} & \textbf{B} & \textbf{$n$} & \textbf{$\Delta$Macro-F1 (pp) [95\% CI]} & \textbf{$q$} & '
+    r'\textbf{$\Delta$N1-F1 (pp) [95\% CI]} & \textbf{$q$} \\',
     r'\midrule', *rows, r'\bottomrule', r'\end{tabular}'])
 
 # ---------------------------------------------------------------- benchmark rows "Ours" + number macros for the text
@@ -101,7 +135,9 @@ for tag, a in [('Teacher', 'T_ce'), ('Asst', 'A_kd_Tce'), ('Edge', 'E_staged_Tce
     s = S[a]
     macros += [rf'\newcommand{{\res{tag}MF}}{{{f2(s["mf1"])}}}', rf'\newcommand{{\res{tag}MFlo}}{{{f2(s["lo"])}}}',
                rf'\newcommand{{\res{tag}MFhi}}{{{f2(s["hi"])}}}', rf'\newcommand{{\res{tag}Acc}}{{{f2(s["acc"])}}}',
-               rf'\newcommand{{\res{tag}Kappa}}{{{s["kappa"]:.3f}}}', rf'\newcommand{{\res{tag}NOne}}{{{f2(s["f1"][1])}}}']
+               rf'\newcommand{{\res{tag}Kappa}}{{{s["kappa"]:.3f}}}', rf'\newcommand{{\res{tag}NOne}}{{{f2(s["f1"][1])}}}',
+               rf'\newcommand{{\res{tag}MFSel}}{{{f2(P79.loc[a, "mf1"])}}}']        # n = 79 (without tuning subjects)
+macros.append(rf'\newcommand{{\resSelMaxDiff}}{{{f2(SEL_MAXDIFF)}}}')
 blocks['result_macros'] = '\n'.join(macros)
 
 # ---------------------------------------------------------------- CKA v2 (notebook R2_cka_v2.ipynb; primary = 79 subjects)
@@ -126,7 +162,12 @@ def vr_cell(level, pair):
     return f'$+{r["median"]:.3f}$ [{r.ci95_low:.3f}, {r.ci95_high:.3f}]'
 
 
+SHORT_EDGE = {'Edge-Staged': 'Staged', 'Edge-Direct': 'Direct', 'Edge-Scratch': 'Scratch'}
+
+
 def arrow(p):
+    for k, v in SHORT_EDGE.items():
+        p = p.replace(k, v)
     return p.replace('~', r'$\leftrightarrow$')
 
 
@@ -137,19 +178,26 @@ for p in PAIRS:
 rows.append(rf'\multicolumn{{5}}{{l}}{{\textit{{Baseline: second model randomly initialized}}}} \\')
 for p in ['Teacher ~ random assistant', 'Teacher ~ random edge', 'Assistant ~ random edge',
           'Edge-Staged ~ random edge', 'Edge-Direct ~ random edge']:
-    lab = arrow(p).replace('random assistant', 'Assistant (random)').replace('random edge', 'Edge (random)')
+    lab = arrow(p).replace('random assistant', r'Assistant$_{\mathrm{rand}}$').replace('random edge', r'Edge$_{\mathrm{rand}}$')
     rows.append(f"\\quad {lab} & {cka_cell('spatial', p)} & -- & {cka_cell('temporal', p)} & -- \\\\")
 pw = CT[CT.family.str.startswith('pathway')]
 rows.append(r'\midrule')
-rows.append(r'\multicolumn{5}{l}{\textit{Pre-specified comparisons: $\Delta$ = A $-$ B (median of per-subject differences) [95\% CI]; $q$}} \\')
-for a, b in [('Assistant ~ Edge-Staged', 'Assistant ~ Edge-Direct'), ('Teacher ~ Edge-Direct', 'Teacher ~ Edge-Staged'),
-             ('Assistant ~ Edge-Staged', 'Assistant ~ Edge-Scratch'), ('Assistant ~ Edge-Direct', 'Assistant ~ Edge-Scratch')]:
-    cells = []
-    for lv in ('spatial', 'temporal'):
-        r = pw[(pw.level == lv) & (pw.a == a) & (pw.b == b)].iloc[0]
-        cells += [f'${r["median"]:+.4f}$ [${r.ci95_low:+.4f}$, ${r.ci95_high:+.4f}$]', q(r.q_bh)]
-    lab = f'({arrow(a)}) $-$ ({arrow(b)})'
-    rows.append(f'\\quad {lab} & ' + ' & '.join(cells) + r' \\')
+rows.append(r'\multicolumn{5}{l}{\textit{Pre-specified comparisons: $\Delta$ = A $-$ B (median of per-subject differences) [95\% CI], $q$}} \\')
+# grouped by the common reference model, so that a row reads "Edge-Staged - Edge-Direct" (similarity to the reference)
+for ref, comps in [('Assistant', [('Edge-Staged', 'Edge-Direct'), ('Edge-Staged', 'Edge-Scratch'), ('Edge-Direct', 'Edge-Scratch')]),
+                   ('Teacher', [('Edge-Direct', 'Edge-Staged')])]:
+    rows.append(rf'\multicolumn{{5}}{{l}}{{\quad \textit{{Similarity to the {ref}}}}} \\')
+    for x, y in comps:
+        a, b = f'{ref} ~ {x}', f'{ref} ~ {y}'
+        cells = []
+        for lv in ('spatial', 'temporal'):
+            r = pw[(pw.level == lv) & (pw.a == a) & (pw.b == b)].iloc[0]
+            qs = q(r.q_bh)
+            qs = f'$q$ {qs}' if qs.startswith('$<$') else f'$q$ = {qs}'
+            # one cell spanning the two columns of the level, so the comparison does not widen the CKA columns
+            cells.append(f'\\multicolumn{{2}}{{c}}{{${r["median"]:+.4f}$ [${r.ci95_low:+.4f}$, ${r.ci95_high:+.4f}$], {qs}}}')
+        rows.append(f'\\qquad {SHORT_EDGE[x]} $-$ {SHORT_EDGE[y]} & ' + ' & '.join(cells) + r' \\')
+assert len(pw[pw.level == 'spatial']) == 4                       # the four pre-specified comparisons, all shown
 blocks['cka_alignment'] = '\n'.join([r'\begin{tabular}{lcccc}', r'\toprule',
     r'& \multicolumn{2}{c}{\textbf{Spatial (CNN embedding)}} & \multicolumn{2}{c}{\textbf{Temporal (context representation)}} \\',
     r'\cmidrule(lr){2-3}\cmidrule(lr){4-5}',
@@ -232,10 +280,11 @@ for db, title in [('kcomplexes', 'K-complexes (10 excerpts)'), ('spindles', 'Sle
         g = XE[(XE.db == db) & (XE.spec == sp) & (XE.method == 'gradient')].auroc
         i = XE[(XE.db == db) & (XE.spec == sp) & (XE.method == 'ig')].auroc
         rows.append(f'\\quad {sp} & {med_iqr(g)} & {med_iqr(i)} & -- & -- & -- \\\\')
-    names = {'abs_x': r'$|x|$', 'envelope': 'Hilbert envelope', 'sigma_power': 'Sigma-band (11--16 Hz) power'}
+    names = {'abs_x': r'$|x|$', 'envelope': 'Hilbert envelope', 'sigma_power': 'Sigma power (11--16 Hz)'}
+    rows.append(r'\multicolumn{6}{l}{\quad \textit{Model-free reference maps}} \\')
     for b in (['abs_x', 'envelope'] + (['sigma_power'] if db == 'spindles' else [])):
         v = XB[(XB.db == db) & (XB.method == b)].auroc
-        rows.append(f'\\quad Baseline: {names[b]} & \\multicolumn{{2}}{{c}}{{{med_iqr(v)}}} & -- & -- & -- \\\\')
+        rows.append(f'\\qquad {names[b]} & \\multicolumn{{2}}{{c}}{{{med_iqr(v)}}} & -- & -- & -- \\\\')
     if db == 'kcomplexes':
         rows.append(r'\midrule')
 blocks['xai_dreams'] = '\n'.join([r'\begin{tabular}{lccccc}', r'\toprule',
@@ -264,6 +313,19 @@ macros += [rf'\newcommand{{\xaiKcIgLo}}{{{kc_ig.min():.3f}}}', rf'\newcommand{{\
            rf'\newcommand{{\xaiSpLo}}{{{sp_all.min():.3f}}}', rf'\newcommand{{\xaiSpHi}}{{{sp_all.max():.3f}}}',
            rf'\newcommand{{\xaiSpSigma}}{{{np.median(XB[(XB.db == "spindles") & (XB.method == "sigma_power")].auroc):.3f}}}',
            rf'\newcommand{{\xaiKcIgVsAbsN}}{{{int((kc[kc.versus == "abs_x"].q_bh < 0.05).sum())}}}']
+# IG completeness: fold models repeated with the finer grid (Methods; Supplementary table s_igcomp)
+IGS = pd.read_csv(os.path.join(EXP, 'results', 'xai_ig_grid_sensitivity_models.csv'))
+IGT = pd.read_csv(os.path.join(EXP, 'results', 'xai_ig_grid_sensitivity_tests.csv'))
+assert (IGS.completeness_64 > 0.10).all()
+still = IGS[IGS.completeness_256 > 0.10]
+assert len(still) == 1                                        # text: "... remained X for the other"
+spec, fold = still.model_id.iloc[0].split('|')
+assert spec.startswith('Edge-Staged') and fold.startswith('fold')  # text names the Edge-Staged model
+macros += [rf'\newcommand{{\igRepN}}{{{len(IGS)}}}', rf'\newcommand{{\igFixedN}}{{{len(IGS) - len(still)}}}',
+           rf'\newcommand{{\igStillErr}}{{{still.completeness_256.iloc[0]:.2f}}}',
+           rf'\newcommand{{\igStillFold}}{{{int(fold[4:])}}}',
+           rf'\newcommand{{\igConclChanged}}{{{int(IGT.conclusion_changed.sum())}}}',
+           rf'\newcommand{{\igTests}}{{{len(IGT)}}}']
 # ---------------------------------------------------------------- training-seed robustness (Edge Students, Teacher-CE lineage)
 SP = pd.read_csv(os.path.join(EXP, 'results', 'seed_robustness_pooled_per_seed.csv'))
 SC = pd.read_csv(os.path.join(EXP, 'results', 'seed_robustness_contrasts.csv'), dtype={'seeds': str})
@@ -319,6 +381,11 @@ assert np.array_equal(a_[num].values, b_[num].values) and (QA.loc['esp32'] == QA
 px79 = pd.read_csv(os.path.join(EXP, 'results', 'sensitivity_exclF1_pooled.csv')).set_index('arm').loc['E_staged_Tce']
 me = QP[QP.model == 'main_eval'].set_index('subjects')
 assert abs(me.loc[S79, 'mf1'] - px79['mf1']) < 1e-9 and abs(me.loc[S100, 'mf1'] - pooled.loc['E_staged_Tce', 'mf1']) < 1e-9
+# descriptive: quantized model relative to the bfloat16 predictions of the main evaluation (the primary reference is strict FP32)
+qz = QP[QP.model == 'esp32'].set_index('subjects')
+assert (qz.mf1 == QP[QP.model == 'esp32s3'].set_index('subjects').mf1).all()
+macros += [rf'\newcommand{{\qeMFvsMain}}{{{qz.loc[S79, "mf1"] - me.loc[S79, "mf1"]:+.2f}}}',
+           rf'\newcommand{{\qeMFvsMainAll}}{{{qz.loc[S100, "mf1"] - me.loc[S100, "mf1"]:+.2f}}}']
 
 
 def qrow(metric, subjects=S79):
@@ -338,8 +405,12 @@ for tag, met in (('MF', 'mf1'), ('NOne', 'f1_N1'), ('NThree', 'f1_N3'), ('REM', 
                    rf'\newcommand{{\qe{tag}{stag}hi}}{{{r.ci95_high_pp:+.2f}}}',
                    rf'\newcommand{{\qe{tag}{stag}p}}{{{pfmt(r.p_boot)}}}', rf'\newcommand{{\qe{tag}{stag}q}}{{{pfmt(r.q_bh)}}}']
 ag = QA.loc['esp32']
+# changed epochs: to the expert label (INT8 correct), away from it (FP32 correct), or between two wrong labels (rest)
+wrong_to_wrong = int(ag.changed_epochs) - int(ag.changed_to_correct) - int(ag.changed_to_wrong)
+assert wrong_to_wrong >= 0
 macros += [rf'\newcommand{{\qeAgree}}{{{ag.agreement_pct:.1f}}}', rf'\newcommand{{\qeChanged}}{{{int(ag.changed_epochs):,}}}',
            rf'\newcommand{{\qeToCorrect}}{{{int(ag.changed_to_correct):,}}}', rf'\newcommand{{\qeToWrong}}{{{int(ag.changed_to_wrong):,}}}',
+           rf'\newcommand{{\qeWrongToWrong}}{{{wrong_to_wrong:,}}}',
            rf'\newcommand{{\qeEpochs}}{{{int(ag.epochs):,}}}',
            rf'\newcommand{{\qeAgreeMain}}{{{ag.agreement_fp32_vs_main_eval_pct:.2f}}}']
 # claims made in the text

@@ -4,8 +4,9 @@ Code for the paper *Ultra-Lightweight Sleep Stage Classification on a Microcontr
 Compression and a Controlled Evaluation of Teacher-Assistant Distillation* (Pham, Tran, Nguyen, Do and Lin,
 Scientific Reports, under review).
 
-- **Code (this repository):** [10.5281/zenodo.23487429](https://doi.org/10.5281/zenodo.23487429) (v1.0.0; all
-  versions: [10.5281/zenodo.23487428](https://doi.org/10.5281/zenodo.23487428))
+- **Code (this repository):** [10.5281/zenodo.23487428](https://doi.org/10.5281/zenodo.23487428) (all versions;
+  resolves to the latest). v1.0.1 is the version used for the revised manuscript; v1.0.0:
+  [10.5281/zenodo.23487429](https://doi.org/10.5281/zenodo.23487429).
 - **Results, measurement logs and checkpoints (Zenodo dataset):**
   [10.5281/zenodo.23487484](https://doi.org/10.5281/zenodo.23487484)
 
@@ -132,6 +133,13 @@ serial log and `results.json`. `test_host_fake_device.py` tests the protocol wit
 
 `tools/smoke_*.py` run the notebooks end to end on small synthetic data on a CPU (one epoch per model), including
 the quantization notebook with a real ESP-PPQ quantization.
+
+## Versions
+
+- **v1.0.1** — version used for the revised manuscript. The table scripts were updated to the final text of the
+  manuscript and the Supplementary (new number macros, a trimmed hardware table, captions); no change to the
+  models, notebooks, firmware or results.
+- **v1.0.0** — first release.
 
 ## Licence
 
