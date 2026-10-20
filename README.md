@@ -4,8 +4,10 @@ Code for the paper *Ultra-Lightweight Sleep Stage Classification on a Microcontr
 Compression and a Controlled Evaluation of Teacher-Assistant Distillation* (Pham, Tran, Nguyen, Do and Lin,
 Scientific Reports, under review).
 
-- **Code (this repository):** DOI `[to be added]`
-- **Results, measurement logs and checkpoints (Zenodo dataset):** DOI `[to be added]`
+- **Code (this repository):** [10.5281/zenodo.23487429](https://doi.org/10.5281/zenodo.23487429) (v1.0.0; all
+  versions: [10.5281/zenodo.23487428](https://doi.org/10.5281/zenodo.23487428))
+- **Results, measurement logs and checkpoints (Zenodo dataset):**
+  [10.5281/zenodo.23487484](https://doi.org/10.5281/zenodo.23487484)
 
 The repository contains everything needed to reproduce the reported results: the model code, the Colab notebooks
 that prepare the data, train all models and compute the statistics, the scripts that generate every table of the

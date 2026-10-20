@@ -14,7 +14,8 @@ authors:
     given-names: Thomas
   - family-names: Lin
     given-names: Chin-Teng
-# doi and repository-code are added when the GitHub repository and the Zenodo record exist
+doi: 10.5281/zenodo.23487429
+repository-code: "https://github.com/pdat2468vector/sleep-kd-mcu"
 preferred-citation:
   type: article
   title: "Ultra-Lightweight Sleep Stage Classification on a Microcontroller: Hardware-Validated Compression and a Controlled Evaluation of Teacher-Assistant Distillation"
