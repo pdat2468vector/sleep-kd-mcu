@@ -1,0 +1,22 @@
+# D4 measurement firmware (ESP32 and ESP32-S3). Delete the generated `sdkconfig` before building so these apply.
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+
+# Task watchdog stays ENABLED (so "no watchdog reset" is a real observation); the inference task yields every epoch.
+CONFIG_ESP_TASK_WDT_EN=y
+CONFIG_ESP_TASK_WDT_TIMEOUT_S=10
+
+# Console / measurement link on UART0
+CONFIG_ESP_CONSOLE_UART_CUSTOM=y
+CONFIG_ESP_CONSOLE_UART_CUSTOM_NUM_0=y
+CONFIG_ESP_CONSOLE_UART_BAUDRATE=460800
+CONFIG_LOG_DEFAULT_LEVEL_WARN=y
+
+# External PSRAM is NOT used (ESP32-S3 modules with PSRAM: keep it disabled)
+# CONFIG_SPIRAM is not set
+
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=8192
+
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

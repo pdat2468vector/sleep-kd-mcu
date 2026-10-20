@@ -1,0 +1,319 @@
+{
+ "target": "esp32",
+ "model": {
+  "arm": "E_staged_Tce",
+  "fold": 0,
+  "seed": 42,
+  "kind": "edge",
+  "target_dim": 128,
+  "params_inference": 17318,
+  "best_epoch": 76
+ },
+ "n_calibration_epochs": 512,
+ "calibration": "train subjects of fold 0",
+ "esp_ppq": "1.3.9",
+ "torch": "2.5.1+cu121",
+ "blocks": {
+  "eeg_block_0": {
+   "input_shape": [
+    1,
+    2,
+    3000
+   ],
+   "groupnorm_groups": 4,
+   "exponents": {
+    "input": [
+     -4
+    ],
+    "dw.weight": [
+     -7
+    ],
+    "/dw/Conv_output_0": [
+     -3
+    ],
+    "pw.weight": [
+     -7
+    ],
+    "output": [
+     -4
+    ]
+   },
+   "rounding": [
+    "RoundingPolicy.ROUND_HALF_UP"
+   ]
+  },
+  "eog_block_0": {
+   "input_shape": [
+    1,
+    1,
+    3000
+   ],
+   "groupnorm_groups": 4,
+   "exponents": {
+    "input": [
+     -4
+    ],
+    "dw.weight": [
+     -7
+    ],
+    "/dw/Conv_output_0": [
+     -2
+    ],
+    "pw.weight": [
+     -7
+    ],
+    "output": [
+     -4
+    ]
+   },
+   "rounding": [
+    "RoundingPolicy.ROUND_HALF_UP"
+   ]
+  },
+  "eeg_block_1": {
+   "input_shape": [
+    1,
+    48,
+    600
+   ],
+   "groupnorm_groups": 4,
+   "exponents": {
+    "input": [
+     -5
+    ],
+    "dw.weight": [
+     -7
+    ],
+    "/dw/Conv_output_0": [
+     -6
+    ],
+    "pw.weight": [
+     -6
+    ],
+    "output": [
+     -4
+    ]
+   },
+   "rounding": [
+    "RoundingPolicy.ROUND_HALF_UP"
+   ]
+  },
+  "eog_block_1": {
+   "input_shape": [
+    1,
+    16,
+    600
+   ],
+   "groupnorm_groups": 4,
+   "exponents": {
+    "input": [
+     -5
+    ],
+    "dw.weight": [
+     -6
+    ],
+    "/dw/Conv_output_0": [
+     -6
+    ],
+    "pw.weight": [
+     -6
+    ],
+    "output": [
+     -5
+    ]
+   },
+   "rounding": [
+    "RoundingPolicy.ROUND_HALF_UP"
+   ]
+  }
+ },
+ "fp32_shapes": {
+  "eeg_0_gn_weight.bin": [
+   48
+  ],
+  "eeg_0_gn_bias.bin": [
+   48
+  ],
+  "eeg_1_gn_weight.bin": [
+   48
+  ],
+  "eeg_1_gn_bias.bin": [
+   48
+  ],
+  "eog_0_gn_weight.bin": [
+   16
+  ],
+  "eog_0_gn_bias.bin": [
+   16
+  ],
+  "eog_1_gn_weight.bin": [
+   16
+  ],
+  "eog_1_gn_bias.bin": [
+   16
+  ],
+  "proj_linear_weight.bin": [
+   64,
+   64
+  ],
+  "proj_linear_bias.bin": [
+   64
+  ],
+  "proj_ln_weight.bin": [
+   64
+  ],
+  "proj_ln_bias.bin": [
+   64
+  ],
+  "gru_weight_ih_l0.bin": [
+   96,
+   64
+  ],
+  "gru_weight_hh_l0.bin": [
+   96,
+   32
+  ],
+  "gru_bias_ih_l0.bin": [
+   96
+  ],
+  "gru_bias_hh_l0.bin": [
+   96
+  ],
+  "gru_norm_weight.bin": [
+   32
+  ],
+  "gru_norm_bias.bin": [
+   32
+  ],
+  "cls_ln_weight.bin": [
+   32
+  ],
+  "cls_ln_bias.bin": [
+   32
+  ],
+  "cls_linear_weight.bin": [
+   5,
+   32
+  ],
+  "cls_linear_bias.bin": [
+   5
+  ]
+ },
+ "layer_norm_eps": {
+  "groupnorm": [
+   1e-05
+  ],
+  "proj_ln": 1e-05,
+  "gru_norm": 1e-05,
+  "cls_ln": 1e-05
+ },
+ "files": {
+  "cls_linear_bias.bin": {
+   "bytes": 20,
+   "sha256": "c88fbfcaf8b2d7258a632cbe134de0009d2fd4c93a031161cf37619552b7cf99"
+  },
+  "cls_linear_weight.bin": {
+   "bytes": 640,
+   "sha256": "99f74bd0b198e8424253fb36ee665d784a631592b2bc8744f9cd8ff2027a8eac"
+  },
+  "cls_ln_bias.bin": {
+   "bytes": 128,
+   "sha256": "00e20ae41f3e23080f8a103f75818cfed92aa0c52e8d89c3d263ca5eb16cbf5f"
+  },
+  "cls_ln_weight.bin": {
+   "bytes": 128,
+   "sha256": "e751ff92395957e89b28b5964228ee20e8f0151be926c6b3acaf9470e6301f5b"
+  },
+  "eeg_0_gn_bias.bin": {
+   "bytes": 192,
+   "sha256": "051ef95912fbb15ae2736df8de5f688a0804798975376805f22e144c0aef9aaf"
+  },
+  "eeg_0_gn_weight.bin": {
+   "bytes": 192,
+   "sha256": "3b1a9a0105547da2474bec9399df68f7968ebb7f7265c86e565a4cc9ce159c2d"
+  },
+  "eeg_1_gn_bias.bin": {
+   "bytes": 192,
+   "sha256": "362b21771523272a319374bdf3e74fb4ef15307ef0202c400a2fb3cb8d495f53"
+  },
+  "eeg_1_gn_weight.bin": {
+   "bytes": 192,
+   "sha256": "04ee195cc47db4d0602b009e2b3a1370e5d03553cc40865fab5c9b5648bf1e9d"
+  },
+  "eeg_block_0.espdl": {
+   "bytes": 2176,
+   "sha256": "6f671c5c4503b21f266e8308ead097baa2c964792dbde2e1e630ee3c060ec260"
+  },
+  "eeg_block_1.espdl": {
+   "bytes": 4592,
+   "sha256": "63e5f6c86b73d97b0413846cc5861737597567f45e1f35121a2f8827340d342b"
+  },
+  "eog_0_gn_bias.bin": {
+   "bytes": 64,
+   "sha256": "3f74a0f672adf41798b64ca8d9e059d82922040e282a0e97cab78c7d754f1054"
+  },
+  "eog_0_gn_weight.bin": {
+   "bytes": 64,
+   "sha256": "50b622a861f53114457146e5103b2e9b8401f4a69693db04e00fc6884ed68aa5"
+  },
+  "eog_1_gn_bias.bin": {
+   "bytes": 64,
+   "sha256": "0db7a40bce9f970cdfcf84a923627c0bc28c7a0161cf7dd6d775728b703833b9"
+  },
+  "eog_1_gn_weight.bin": {
+   "bytes": 64,
+   "sha256": "70e6d33b41069398de6e7763065e2beeb25af31bf75f6ef467fdbc027dd19099"
+  },
+  "eog_block_0.espdl": {
+   "bytes": 2128,
+   "sha256": "2eb3cb7cefdbc5f16af419d2c8bc537e5ac0f77375c54ecb8ae0f294f7a32352"
+  },
+  "eog_block_1.espdl": {
+   "bytes": 2384,
+   "sha256": "d9b5c754d7fee705e9ba1ffaf06f208aee88cc6688a6d823cb23d0bba00fe471"
+  },
+  "gru_bias_hh_l0.bin": {
+   "bytes": 384,
+   "sha256": "0503bbc847967c5f191e59e98f4ac1c7d273b21692f54477192a9317b68bebc3"
+  },
+  "gru_bias_ih_l0.bin": {
+   "bytes": 384,
+   "sha256": "9769331f922050b268dbcc404a7b43ad0e83dfeffcf5dfb59480e9943f4ef863"
+  },
+  "gru_norm_bias.bin": {
+   "bytes": 128,
+   "sha256": "4221e9ce4d967c7969a143d1c1b41db8aadb9cf03821295fb510da4384e05db9"
+  },
+  "gru_norm_weight.bin": {
+   "bytes": 128,
+   "sha256": "a6f45d8610b37ef79ec7ea71586f4846102f801ff91e58cbbc7d8d4227d78823"
+  },
+  "gru_weight_hh_l0.bin": {
+   "bytes": 12288,
+   "sha256": "954261f45036cb03147428a1b9df47d862a2bdc4011c87f1843d947c70e15824"
+  },
+  "gru_weight_ih_l0.bin": {
+   "bytes": 24576,
+   "sha256": "01a6791355c92eb368e4ea2819e77d95a2e044b7360399cf9259acd97f8a9011"
+  },
+  "proj_linear_bias.bin": {
+   "bytes": 256,
+   "sha256": "ade29e0eadcddb86ba4cdbf63807cd1d3f5e179c8cfbfc0906cbf95e17809e0a"
+  },
+  "proj_linear_weight.bin": {
+   "bytes": 16384,
+   "sha256": "3f2608c16aa111b0a750c9f73f79db9b6ec616e6226f102c81987198f22534e2"
+  },
+  "proj_ln_bias.bin": {
+   "bytes": 256,
+   "sha256": "2906ebbd47359331ea142ee6a347a4c5b7b8ee596f721a199ca5b98774d38e75"
+  },
+  "proj_ln_weight.bin": {
+   "bytes": 256,
+   "sha256": "6cc79b54992ceaf9b951746ae5aa2d7d15b909a189f50b6450492536d20dc9f4"
+  }
+ },
+ "espdl_bytes": 11280,
+ "fp32_bytes": 56980,
+ "model_bytes_total": 68260
+}

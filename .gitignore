@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+build/
+tables/
+supplementary/
+hw_tables/
+hardware/firmware/build/
+hardware/firmware/managed_components/
+hardware/firmware/sdkconfig
+hardware/firmware/sdkconfig.old
+hardware/firmware/dependencies.lock
+hardware/work_onnx/
+hardware/inputs/
+hardware/build_artifacts/
+hardware/logs/*/

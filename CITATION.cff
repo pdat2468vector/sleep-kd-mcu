@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use this code, please cite the paper and this software."
+title: "Ultra-lightweight sleep stage classification on a microcontroller: code"
+version: "1.0.0"
+license: MIT
+authors:
+  - family-names: Pham
+    given-names: Tien-Dat
+  - family-names: Tran
+    given-names: Xuan-The
+  - family-names: Nguyen
+    given-names: Manh-Dat
+  - family-names: Do
+    given-names: Thomas
+  - family-names: Lin
+    given-names: Chin-Teng
+# doi and repository-code are added when the GitHub repository and the Zenodo record exist
+preferred-citation:
+  type: article
+  title: "Ultra-Lightweight Sleep Stage Classification on a Microcontroller: Hardware-Validated Compression and a Controlled Evaluation of Teacher-Assistant Distillation"
+  journal: "Scientific Reports"
+  authors:
+    - family-names: Pham
+      given-names: Tien-Dat
+    - family-names: Tran
+      given-names: Xuan-The
+    - family-names: Nguyen
+      given-names: Manh-Dat
+    - family-names: Do
+      given-names: Thomas
+    - family-names: Lin
+      given-names: Chin-Teng

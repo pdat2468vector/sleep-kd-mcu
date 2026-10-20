@@ -1,0 +1,4 @@
+*.bin    binary
+*.espdl  binary
+*.npz    binary
+*.pt     binary
